@@ -2,11 +2,13 @@ package parser
 
 import parser.chief.Chief
 import parser.plotter.Plotter
+import parser.solver.Solver
 import parser.solver.impl.CustomSolver
+import parser.solver.impl.MathJsServiceSolver
+import java.lang.IllegalArgumentException
 
 fun main(args: Array<String>) {
-
-    if (args.size != 2) {
+    if (args.size != 3) {
         help()
     } else {
         try {
@@ -16,7 +18,7 @@ fun main(args: Array<String>) {
             val equation = args[0]
 
             val chief = Chief()
-            val solver = CustomSolver()
+            val solver = getSolver(args[2])
             for (x in xValues) {
                 val expression = chief.makeExpression(equation, x)
                 yValues.add(solver.evaluate(expression.replace(" ", "")))
@@ -31,8 +33,18 @@ fun main(args: Array<String>) {
     }
 }
 
+fun getSolver(solverName: String): Solver {
+
+    if (solverName == "custom") {
+        return CustomSolver()
+    } else if (solverName == "mathjs") {
+        return MathJsServiceSolver()
+    }
+    throw IllegalArgumentException("Cannot find solver with name -> $solverName")
+}
+
 fun help() {
-    println("To run jar use: java -jar parser-task.jar x^2-10 -10to10")
+    println("To run jar use: java -jar parser-task.jar x^2-10 -10to10 custom")
 }
 
 fun generateXValues(borders: List<String>): List<Double> {

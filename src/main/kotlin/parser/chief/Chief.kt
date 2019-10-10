@@ -7,6 +7,6 @@ class Chief {
     }
 
     fun makeExpression(function: String, variableToSwitch: Double): String {
-        return function.replace(PARAMETER, variableToSwitch.toString())
+        return function.replace(PARAMETER, "($variableToSwitch)")
     }
 }
