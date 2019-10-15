@@ -1,27 +1,24 @@
 package parser
 
-import parser.chief.Chief
 import parser.plotter.Plotter
-import parser.solver.Solver
-import parser.solver.impl.CustomSolver
-import parser.solver.impl.MathJsServiceSolver
+import parser.solver.ParametrizedExpressionBuilder
+import parser.solver.impl.custom.CustomParametrizedExpressionBuilder
 import java.lang.IllegalArgumentException
 
 fun main(args: Array<String>) {
-    if (args.size != 3) {
+    if (!(args.size != 3)) {
         help()
     } else {
         try {
 
-            val xValues = generateXValues(args[1].split("to"))
+            val xValues = generateXValues("-10to10".split("to"))//args[1].split("to"))
             val yValues = mutableListOf<Double>()
-            val equation = args[0]
+            val equation = "x^2-9"//args[0]
 
-            val chief = Chief()
-            val solver = getSolver(args[2])
+            val expression = getExpressionBuilder("custom")//args[2])
+            val expr = expression.build(equation)
             for (x in xValues) {
-                val expression = chief.makeExpression(equation, x)
-                yValues.add(solver.evaluate(expression.replace(" ", "")))
+                yValues.add(expr.solve(x))
             }
             val plotter = Plotter()
             plotter.plot(xValues, yValues)
@@ -33,12 +30,12 @@ fun main(args: Array<String>) {
     }
 }
 
-fun getSolver(solverName: String): Solver {
+fun getExpressionBuilder(solverName: String): ParametrizedExpressionBuilder {
 
     if (solverName == "custom") {
-        return CustomSolver()
+        return CustomParametrizedExpressionBuilder()
     } else if (solverName == "mathjs") {
-        return MathJsServiceSolver()
+      //  return MathJsServiceSolver()
     }
     throw IllegalArgumentException("Cannot find solver with name -> $solverName")
 }

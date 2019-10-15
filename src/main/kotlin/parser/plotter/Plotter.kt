@@ -8,15 +8,17 @@ class Plotter {
     companion object {
         const val POINT_LABEL = "*"
         const val RIGHT_DELIMITER = " "
+        const val POINT = "(%d,%d)"
     }
 
     fun plot(xValues: List<Double>, yValues: MutableList<Double>) {
         var currentLineIndex = yValues.max()!!.roundToInt()
         val minX = xValues.min()!!.roundToInt()
+        val maxX = xValues.max()!!.roundToInt()
         val argumentsGraph = createGraph(xValues, yValues)
         val step = 1
         val minY = yValues.min()!!.roundToInt()
-
+        println(createMetaLine(minX, maxX, currentLineIndex))
         while (currentLineIndex >= minY) {
 
             if (argumentsGraph.containsKey(currentLineIndex)) {
@@ -29,6 +31,17 @@ class Plotter {
 
             currentLineIndex -= step
         }
+        print(createMetaLine(minX, maxX, minY))
+    }
+
+    private fun createMetaLine(minX: Int, maxX: Int, y : Int): String {
+        val sb = StringBuilder(POINT.format(minX, y))
+        val whitespacesAmount = minX.minus(maxX).absoluteValue - sb.length
+        for (i in whitespacesAmount downTo 1) {
+            sb.append(RIGHT_DELIMITER)
+        }
+        sb.append(POINT.format(maxX, y))
+        return sb.toString()
     }
 
     private fun createOutputLine(arguments: MutableList<Int>?, minX: Int): String {

@@ -1,20 +1,20 @@
-package parser.solver.impl
+package parser.solver.impl.custom
 
-import parser.solver.Solver
+import parser.solver.ParametrizedExpressionBuilder
+import parser.solver.impl.custom.expression.*
 import java.lang.StringBuilder
 import java.util.*
 import kotlin.IllegalArgumentException
-import kotlin.math.pow
 
-class CustomSolver : Solver {
+class CustomParametrizedExpressionBuilder : ParametrizedExpressionBuilder {
 
-    override fun evaluate(expression: String): Double {
+    override fun build(expression: String): ParameterizedExpression {
 
         val operators = Stack<String>()
-        val values = Stack<Double>()
 
         val tokens = expression.toCharArray()
         var index = 0
+        val nodes = Stack<Node>()
 
         while (index < tokens.size) {
             val currentToken = tokens[index]
@@ -24,7 +24,8 @@ class CustomSolver : Solver {
                 when {
                     Character.isDigit(currentToken) -> {
                         val pair = extractValue(tokens, index)
-                        values.push(pair.first)
+                        val value = Value(pair.first)
+                        nodes.push(value)
                         index = pair.second
                     }
                     currentToken == '(' -> {
@@ -32,7 +33,11 @@ class CustomSolver : Solver {
                         index++
                     }
                     currentToken == ')' -> {
-                        resolveBracketContent(operators, values)
+                        resolveBracketContent(operators, nodes)
+                        index++
+                    }
+                    currentToken == 'x' -> {
+                        nodes.push(Parameter())
                         index++
                     }
                     isOperator(currentToken) -> {
@@ -40,7 +45,7 @@ class CustomSolver : Solver {
                         if (isUnary(tokens, index, currentToken)) {
                             currentOperator = getUnary(currentOperator)
                         }
-                        resolvePreviousPart(operators, values, currentOperator)
+                        resolvePreviousPart(operators, currentOperator, nodes)
                         operators.push(currentOperator)
                         index++
                     }
@@ -53,8 +58,8 @@ class CustomSolver : Solver {
         }
 
         while (!operators.empty())
-            values.push(applyOperator(operators.pop(), values))
-        return values.pop()
+            addOperator(operators.pop(), nodes)
+        return ParameterizedExpression(nodes.pop() as Operator)
     }
 
     private fun getUnary(currentOperator: String): String {
@@ -71,15 +76,15 @@ class CustomSolver : Solver {
         return false
     }
 
-    private fun resolvePreviousPart(operators: Stack<String>, values: Stack<Double>, currentOperator: String) {
+    private fun resolvePreviousPart(operators: Stack<String>, currentOperator: String, nodes: Stack<Node>) {
         while (!operators.empty() && hasPrecedence(currentOperator, operators.peek()))
-            values.push(applyOperator(operators.pop(), values))
+            addOperator(operators.pop(), nodes)
     }
 
     private fun hasPrecedence(currentOperator: String, previousOperator: String): Boolean {
         if (previousOperator == "(" || previousOperator == ")")
             return false
-        if (currentOperator == "^" && "/+*-".contains(previousOperator))
+        if (currentOperator == "^" && "/+*-^".contains(previousOperator))
             return false
         return !((currentOperator == "*" || currentOperator == "/") &&
                 "+-".contains(previousOperator))
@@ -90,20 +95,19 @@ class CustomSolver : Solver {
                 currentToken == '*' || currentToken == '/' || currentToken == '^'
     }
 
-    private fun resolveBracketContent(operators: Stack<String>, values: Stack<Double>) {
+    private fun resolveBracketContent(operators: Stack<String>, nodes: Stack<Node>) {
         while (operators.peek() != "(")
-            values.push(applyOperator(operators.pop(), values))
+            addOperator(operators.pop(), nodes)
         operators.pop()
     }
 
-    private fun applyOperator(operator: String, values: Stack<Double>): Double {
+    private fun addOperator(operator: String, nodes: Stack<Node>) {
         if (isUnary(operator)) {
-            return applyUnaryOperator(operator, values.pop())
+            nodes.push(UnaryOperator(nodes.pop() as Argument, operator))
+            return
         }
-        if (values.size < 2) {
-            throw IllegalArgumentException("Wrong usage of operator: $operator")
-        }
-        return applyOperator(operator, values.pop(), values.pop())
+        require(nodes.size >= 2) { "Wrong usage of operator: $operator" }
+        nodes.push(Operator(nodes.pop(), operator, nodes.pop()))
     }
 
     private fun isUnary(operator: String): Boolean {
@@ -111,24 +115,6 @@ class CustomSolver : Solver {
             return true
         }
         return false
-    }
-
-    private fun applyUnaryOperator(operator: String, value: Double): Double {
-        when (operator) {
-            "u-" -> return -value
-        }
-        throw IllegalStateException("Unreachable -> $operator")
-    }
-
-    private fun applyOperator(operator: String, second: Double, first: Double): Double {
-        when (operator) {
-            "+" -> return first + second
-            "-" -> return first - second
-            "*" -> return first * second
-            "/" -> return first / second
-            "^" -> return first.pow(second)
-        }
-        throw IllegalArgumentException("Wrong operator -> $operator")
     }
 
     private fun extractValue(tokens: CharArray, index: Int): Pair<Double, Int> {
