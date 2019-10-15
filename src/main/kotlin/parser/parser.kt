@@ -6,16 +6,16 @@ import parser.solver.impl.custom.CustomParametrizedExpressionBuilder
 import java.lang.IllegalArgumentException
 
 fun main(args: Array<String>) {
-    if (!(args.size != 3)) {
+    if (args.size != 3) {
         help()
     } else {
         try {
 
-            val xValues = generateXValues("-10to10".split("to"))//args[1].split("to"))
+            val xValues = generateXValues(args[1].split("to"))
             val yValues = mutableListOf<Double>()
-            val equation = "x^2-9"//args[0]
+            val equation = args[0]
 
-            val expression = getExpressionBuilder("custom")//args[2])
+            val expression = getExpressionBuilder(args[2])
             val expr = expression.build(equation)
             for (x in xValues) {
                 yValues.add(expr.solve(x))
